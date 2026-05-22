@@ -28,29 +28,43 @@ By default the signer locates `dy_ab.js` via `../../static`. Override with the
 ```bash
 cd ts
 npm install
+cp config.example.json config.json   # then fill in your credentials
 ```
+
+## Configuration
+
+Both demos read credentials from `config.json` (gitignored). Copy the template
+and fill in the fields:
+
+```jsonc
+{
+  "cookie":     "sessionid=...; s_v_web_id=verify_...; msToken=...; ttwid=...",
+  "webProtect": "{\"data\":\"{...ticket / ts_sign / client_cert...}\"}",  // send only
+  "keys":       "{\"data\":\"{...ec_privateKey...}\"}",                    // send only
+  "toUid":      "123456789",                                               // send demo
+  "text":       "hello"                                                    // send demo
+}
+```
+
+Resolution order: `$DY_CONFIG` → `./config.json` → project `config.json`. Any
+field can still be overridden by the matching env var
+(`DY_COOKIE` / `DY_WEB_PROTECT` / `DY_KEYS` / `DY_TO_UID` / `DY_TEXT`).
 
 ## Receive private messages
 
-Only a logged-in cookie is required.
+Only `cookie` is required.
 
 ```bash
-DY_COOKIE="sessionid=...; s_v_web_id=verify_...; msToken=...; ttwid=..." \
-  npx ts-node src/demo-recv.ts
+npx ts-node src/demo-recv.ts
 ```
 
 ## Send a private message
 
-Sending additionally requires the `bd-ticket-guard` material captured from the
-browser (the same `web_protect` and `keys` blobs the Python version uses):
+Additionally requires the `bd-ticket-guard` material (`webProtect` + `keys`,
+the same blobs the Python version uses) and `toUid` in `config.json`.
 
 ```bash
-DY_COOKIE="..." \
-DY_WEB_PROTECT='{"data":"{\"ticket\":\"...\",\"ts_sign\":\"...\",\"client_cert\":\"...\"}"}' \
-DY_KEYS='{"data":"{\"ec_privateKey\":\"-----BEGIN PRIVATE KEY-----...\"}"}' \
-DY_TO_UID="123456789" \
-DY_TEXT="hello" \
-  npx ts-node src/demo-send.ts
+npx ts-node src/demo-send.ts
 ```
 
 ## Programmatic use
