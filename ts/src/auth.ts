@@ -1,6 +1,27 @@
 import { Signer } from './signer';
 
 /**
+ * DouYin's keys blob may store ec_privateKey either as a PEM or as a bare
+ * P-256 private-key hex string (the `d` value). jsrsasign's Signature.init /
+ * KEYUTIL.getKey only accept a PEM (or key object), so normalize hex to
+ * PKCS#8 PEM here. PEMs are passed through untouched.
+ */
+function normalizePrivateKey(key: string): string {
+  if (!key || key.includes('BEGIN')) return key;
+  if (/^[0-9a-fA-F]+$/.test(key.trim())) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const js = require('jsrsasign');
+      const ecdsa = js.KEYUTIL.getKey({ curve: 'secp256r1', d: key.trim() });
+      return js.KEYUTIL.getPEM(ecdsa, 'PKCS8PRV');
+    } catch {
+      return key;
+    }
+  }
+  return key;
+}
+
+/**
  * Mirrors builder/auth.py DouyinAuth.
  *
  * cookieStr      : the full document.cookie from a logged-in douyin.com session.
@@ -39,7 +60,7 @@ export class DouyinAuth {
     }
     if (keysStr) {
       const keys = JSON.parse(JSON.parse(keysStr).data);
-      this.privateKey = keys.ec_privateKey;
+      this.privateKey = normalizePrivateKey(keys.ec_privateKey);
       this.reePublicKey = Buffer.from(this.privateKey ?? '', 'utf-8').toString('base64');
     }
     return this;
