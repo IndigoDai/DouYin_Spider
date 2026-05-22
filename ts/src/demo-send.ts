@@ -1,27 +1,25 @@
 import { DouyinAuth } from './auth';
 import { Signer } from './signer';
 import { DouyinAPI } from './api';
+import { loadConfig } from './config';
 
 /**
  * Send a private message.
- * Requires extra captured tokens beyond the cookie (bd-ticket-guard):
- *   DY_COOKIE       - douyin.com cookie string
- *   DY_WEB_PROTECT  - raw web_protect JSON (contains ticket / ts_sign / client_cert)
- *   DY_KEYS         - raw keys JSON (contains ec_privateKey)
- *   DY_TO_UID       - recipient user id
- *   DY_TEXT         - message text (default "hello")
+ * Reads cookie + bd-ticket-guard material from config.json
+ * (copy config.example.json -> config.json and fill in cookie / webProtect /
+ * keys / toUid / text). Env vars still override individual fields.
  */
 async function main() {
-  const cookie = process.env.DY_COOKIE;
-  const webProtect = process.env.DY_WEB_PROTECT ?? '';
-  const keys = process.env.DY_KEYS ?? '';
-  const toUid = process.env.DY_TO_UID;
-  const text = process.env.DY_TEXT ?? 'hello';
-  if (!cookie || !webProtect || !keys || !toUid) {
-    throw new Error('Set DY_COOKIE, DY_WEB_PROTECT, DY_KEYS, DY_TO_UID');
+  const cfg = loadConfig();
+  const webProtect = cfg.webProtect ?? '';
+  const keys = cfg.keys ?? '';
+  const toUid = cfg.toUid;
+  const text = cfg.text ?? 'hello';
+  if (!webProtect || !keys || !toUid) {
+    throw new Error('Sending needs webProtect, keys and toUid in config.json (or DY_WEB_PROTECT / DY_KEYS / DY_TO_UID).');
   }
 
-  const auth = new DouyinAuth().prepare(cookie, webProtect, keys);
+  const auth = new DouyinAuth().prepare(cfg.cookie, webProtect, keys);
   const signer = new Signer();
   const api = new DouyinAPI(auth, signer);
 

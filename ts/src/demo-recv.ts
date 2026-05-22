@@ -1,17 +1,18 @@
 import { DouyinAuth } from './auth';
 import { Signer } from './signer';
 import { DouyinRecvMsg, PrivateMessage } from './recvMsg';
+import { loadConfig } from './config';
 
 /**
  * Receive private messages in real time.
- * Set DY_COOKIE to your logged-in douyin.com cookie string.
- *   DY_COOKIE="sessionid=...; s_v_web_id=...; ..." npx ts-node src/demo-recv.ts
+ * Reads the cookie from config.json (copy config.example.json -> config.json).
+ *   npx ts-node src/demo-recv.ts
+ * DY_COOKIE / DY_CONFIG env vars still override the file if set.
  */
 async function main() {
-  const cookie = process.env.DY_COOKIE;
-  if (!cookie) throw new Error('Set DY_COOKIE env var to your douyin.com cookie string');
+  const cfg = loadConfig();
 
-  const auth = new DouyinAuth().prepare(cookie);
+  const auth = new DouyinAuth().prepare(cfg.cookie);
   const signer = new Signer();
   const recv = new DouyinRecvMsg(auth, signer, true);
 
